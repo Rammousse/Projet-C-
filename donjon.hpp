@@ -27,7 +27,10 @@ public:
     ~Donjon(); // Pour libérer la mémoire des pointeurs Case*
     
     void generer(int l, int h);
-    void afficher(int playerX, int playerY);
+    void afficher(int playerX, int playerY, const std::vector<std::pair<int, int>>& chemin = {});
+    void placerElements();
+    void setCase(int x, int y, TypeCase type);
+
     std::vector<std::pair<int, int>> trouverChemin(); // BFS
     
     // Getters utiles pour l'aventurier

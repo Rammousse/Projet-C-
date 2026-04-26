@@ -18,7 +18,7 @@ public:
     int getY() const { return posY; }
 
     void deplacer(int dx, int dy, Donjon& d);
-    void resoudreCase(Case* c);
+    void resoudreCase(Case* c, Donjon& d);
     bool estVivant() const;
     void afficherStatut() const;
     
