@@ -31,6 +31,12 @@ void Donjon::generer(int l, int h) {
     
     // Placement de l'entrée et de la sortie
     delete grille[1][1]; grille[1][1] = CaseFactory::creerCase(TypeCase::PASSAGE);
+
+    //sortie
+    int outX = largeur - 2;
+    int outY = hauteur - 2;
+    delete grille[outY][outX];
+    grille[outY][outX] = CaseFactory::creerCase(TypeCase::SORTIE);
 }
 
 void Donjon::genererLabyrinthe(int x, int y) {
@@ -62,10 +68,38 @@ void Donjon::genererLabyrinthe(int x, int y) {
     }
 }
 
-void Donjon::afficher() {
+void Donjon::afficher(int playerX, int playerY) {
+    system("clear"); // Nettoie l'écran pour un effet "jeu"
+
     for (int y = 0; y < hauteur; ++y) {
         for (int x = 0; x < largeur; ++x) {
-            std::cout << grille[y][x]->afficher();
+            if (x == playerX && y == playerY) {
+                // Joueur en Vert
+                std::cout << VERT << "@ " << RESET;
+            } else {
+                char symbole = grille[y][x]->afficher();
+                
+                switch (symbole) {
+                    case 'T': // Trésor en Jaune
+                        std::cout << JAUNE << "T " << RESET;
+                        break;
+                    case 'M': // Monstre en Rouge
+                        std::cout << ROUGE << "M " << RESET;
+                        break;
+                    case 'P': // Piège en Cyan (bleu clair)
+                        std::cout << CYAN << "P " << RESET;
+                        break;
+                    case '#': // Murs en blanc/gris (normal)
+                        std::cout << "# ";
+                        break;
+                    case 'S':
+                        std::cout << "\033[34m" << "S " << "\033[0m"; // Bleu
+                        break;
+                    default: // Passages
+                        std::cout << "  "; 
+                        break;
+                }
+            }
         }
         std::cout << std::endl;
     }

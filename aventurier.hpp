@@ -8,6 +8,7 @@ private:
     int posX, posY;
     int pv;
     int inventaire; // Nombre de trésors
+    bool aGagne; // dit si le joueur a gagne
 
 public:
     Aventurier(int startX, int startY);
