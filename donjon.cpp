@@ -1,6 +1,7 @@
 #include "donjon.hpp"
 #include "case.hpp"
 #include <algorithm> // pour std::random_shuffle
+#include <random> // pour std::random_device rd;
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -107,7 +108,13 @@ void Donjon::genererLabyrinthe(int x, int y) {
 
     // Directions : NORD, SUD, EST, OUEST
     std::vector<std::pair<int, int>> directions = {{0, -2}, {0, 2}, {2, 0}, {-2, 0}};
-    std::random_shuffle(directions.begin(), directions.end()); // Aléatoire [cite: 459]
+    
+    // On crée un générateur de nombres aléatoires basé sur le temps
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    // On utilise shuffle à la place de random_shuffle
+    std::shuffle(directions.begin(), directions.end(), g);
 
     for (auto& d : directions) {
         int nx = x + d.first;
