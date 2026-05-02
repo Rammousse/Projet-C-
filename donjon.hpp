@@ -31,7 +31,7 @@ public:
     void placerElements();
     void setCase(int x, int y, TypeCase type);
 
-    std::vector<std::pair<int, int>> trouverChemin(); // BFS
+    std::vector<std::pair<int, int>> trouverChemin(int startX, int startY); // BFS
     
     // Getters utiles pour l'aventurier
     Case* getCase(int x, int y);

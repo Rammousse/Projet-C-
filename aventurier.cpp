@@ -107,9 +107,16 @@ void Aventurier::resoudreCase(Case* c, Donjon& d) {
 
 void Aventurier::boucleDeJeu(Donjon& d) {
     char touche;
+    bool afficherChemin = false; // on mémorise si on doit afficher le chemin
     while (estVivant() && !aGagne) {
-        // On calcule le chemin à chaque tour
-        std::vector<std::pair<int, int>> cheminOpti = d.trouverChemin();
+
+        // On prépare un chemin vide par défaut
+        std::vector<std::pair<int, int>> cheminOpti;
+        
+        // Si le joueur a demandé le chemin (touche 'p'), on le calcule
+        if (afficherChemin) {
+            cheminOpti = d.trouverChemin(posX, posY);
+        }
         
         // On l'envoie à l'affichage
         d.afficher(posX, posY, cheminOpti);
@@ -118,13 +125,18 @@ void Aventurier::boucleDeJeu(Donjon& d) {
         afficherStatut();
         
         // On demande l'action
-        std::cout << "\nActions : (Z)Haut (S)Bas (Q)Gauche (D)Droite | Quitter (X)" << std::endl;
+        std::cout << "\nActions : (Z)Haut (S)Bas (Q)Gauche (D)Droite | (P)Chemin | Quitter (X)" << std::endl;
         std::cout << "Votre choix >> ";
         std::cin >> touche;
 
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         if (touche == 'x' || touche == 'X') break;
+
+        if (touche == 'p' || touche == 'P') {
+            afficherChemin = !afficherChemin; // Inverse l'état (true devient false, false devient true)
+            continue; // On recharge l'affichage immédiatement
+        }
 
         // Gestion des directions
         if (touche == 'z') deplacer(0, -1, d);

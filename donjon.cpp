@@ -8,8 +8,7 @@
 #include <queue>
 #include <map>
 
-std::vector<std::pair<int, int>> Donjon::trouverChemin() {
-    int startX = 1, startY = 1;
+std::vector<std::pair<int, int>> Donjon::trouverChemin(int startX, int startY) {
     int endX = largeur - 2, endY = hauteur - 2;
 
     // File pour le BFS : stocke les coordonnées (x, y)
@@ -114,7 +113,7 @@ void Donjon::genererLabyrinthe(int x, int y) {
     // On utilise l'horloge système au lieu de random_device
     static unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     static std::mt19937 g(seed);   
-    
+
     // On utilise shuffle à la place de random_shuffle
     std::shuffle(directions.begin(), directions.end(), g);
 
