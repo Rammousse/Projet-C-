@@ -7,6 +7,7 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <string>
 
 std::vector<std::pair<int, int>> Donjon::trouverChemin(int startX, int startY) {
     int endX = largeur - 2, endY = hauteur - 2;
@@ -214,4 +215,44 @@ void Donjon::setCase(int x, int y, TypeCase type) {
 Case* Donjon::getCase(int x, int y) {
     if (x < 0 || x >= largeur || y < 0 || y >= hauteur) return nullptr;
     return grille[y][x];
+}
+
+void Donjon::sauvegarder(std::ofstream& ofs) const {
+    ofs << largeur << " " << hauteur << "\n";
+    for (int y = 0; y < hauteur; ++y) {
+        for (int x = 0; x < largeur; ++x) {
+            ofs << grille[y][x]->afficher(); // Sauvegarde le caractère ('#', ' ', 'M'...)
+        }
+        ofs << "\n";
+    }
+}
+
+void Donjon::charger(std::ifstream& ifs) {
+    ifs >> largeur >> hauteur;
+    ifs.ignore(); // Ignorer le saut de ligne après les dimensions
+
+    // Nettoyer l'ancienne grille si elle existait[cite: 5]
+    for (auto& ligne : grille) {
+        for (Case* c : ligne) delete c;
+    }
+    grille.assign(hauteur, std::vector<Case*>(largeur, nullptr));
+
+    std::string ligne;
+    for (int y = 0; y < hauteur; ++y) {
+        std::getline(ifs, ligne);
+        for (int x = 0; x < largeur; ++x) {
+            char symbole = ligne[x];
+            TypeCase type;
+            // Mapping inverse du symbole vers TypeCase[cite: 4]
+            switch(symbole) {
+                case '#': type = TypeCase::MUR; break;
+                case 'T': type = TypeCase::TRESOR; break;
+                case 'M': type = TypeCase::MONSTRE; break;
+                case 'P': type = TypeCase::PIEGE; break;
+                case 'S': type = TypeCase::SORTIE; break;
+                default:  type = TypeCase::PASSAGE; break; // Espace ' '
+            }
+            grille[y][x] = CaseFactory::creerCase(type);
+        }
+    }
 }

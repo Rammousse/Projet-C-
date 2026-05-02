@@ -1,6 +1,7 @@
 #ifndef AVENTURIER_HPP
 #define AVENTURIER_HPP
 
+#include <fstream>
 #include "donjon.hpp"
 
 class Aventurier {
@@ -24,6 +25,9 @@ public:
     
     // La méthode principale qui gère les entrées clavier
     void boucleDeJeu(Donjon& d);
+
+    void sauvegarder(std::ofstream& ofs) const;
+    void charger(std::ifstream& ifs);
 };
 
 #endif

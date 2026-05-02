@@ -125,7 +125,7 @@ void Aventurier::boucleDeJeu(Donjon& d) {
         afficherStatut();
         
         // On demande l'action
-        std::cout << "\nActions : (Z)Haut (S)Bas (Q)Gauche (D)Droite | (P)Chemin | Quitter (X)" << std::endl;
+        std::cout << "\nActions : (Z)Haut (S)Bas (Q)Gauche (D)Droite | (P)Chemin | (V)Sauvegarder | Quitter (X)" << std::endl;
         std::cout << "Votre choix >> ";
         std::cin >> touche;
 
@@ -136,6 +136,20 @@ void Aventurier::boucleDeJeu(Donjon& d) {
         if (touche == 'p' || touche == 'P') {
             afficherChemin = !afficherChemin; // Inverse l'état (true devient false, false devient true)
             continue; // On recharge l'affichage immédiatement
+        }
+
+        if (touche == 'v' || touche == 'V') {
+            std::ofstream ofs("sauvegarde.txt");
+            if (ofs.is_open()) {
+                this->sauvegarder(ofs); // Sauvegarde l'aventurier
+                d.sauvegarder(ofs);     // Sauvegarde le donjon
+                std::cout << VERT << "Partie sauvegardée avec succès !" << RESET << std::endl;
+                ofs.close();
+            } else {
+                std::cout << ROUGE << "Erreur lors de la sauvegarde." << RESET << std::endl;
+            }
+            std::cin.get(); // Pause pour lire le message
+            continue;
         }
 
         // Gestion des directions
@@ -150,4 +164,12 @@ void Aventurier::boucleDeJeu(Donjon& d) {
     } else if (!estVivant()) {
         std::cout << "GAME OVER..." << std::endl;
     }
+}
+
+void Aventurier::sauvegarder(std::ofstream& ofs) const {
+    ofs << posX << " " << posY << " " << pv << " " << inventaire << " " << aGagne << "\n";
+}
+
+void Aventurier::charger(std::ifstream& ifs) {
+    ifs >> posX >> posY >> pv >> inventaire >> aGagne;
 }

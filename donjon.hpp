@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <utility>
+#include <fstream>
 #include "case.hpp"
 
 // Codes ANSI pour les couleurs
@@ -30,6 +31,9 @@ public:
     void afficher(int playerX, int playerY, const std::vector<std::pair<int, int>>& chemin = {});
     void placerElements();
     void setCase(int x, int y, TypeCase type);
+
+    void sauvegarder(std::ofstream& ofs) const;
+    void charger(std::ifstream& ifs);
 
     std::vector<std::pair<int, int>> trouverChemin(int startX, int startY); // BFS
     
