@@ -17,9 +17,28 @@ public:
 class Mur : public Case { public: char afficher() override { return '#'; } };
 class Passage : public Case { public: char afficher() override { return ' '; } };
 class Tresor : public Case { public: char afficher() override { return 'T'; } };
-class Monstre : public Case { public: char afficher() override { return 'M'; } };
 class Piege : public Case { public: char afficher() override { return 'P'; } };
 class Sortie : public Case { public: char afficher() override { return 'S'; } };
+
+class Monstre : public Case { 
+private:
+    int pv;
+    int degats;
+public: 
+    // Constructeur : 50 PV et 15 Dégâts par défaut
+    Monstre() : pv(50), degats(15) {} 
+    
+    char afficher() override { return 'M'; } 
+    
+    // Getters et utilitaires de combat
+    int getPv() const { return pv; }
+    int getDegats() const { return degats; }
+    void recevoirDegats(int d) { 
+        pv -= d; 
+        if(pv < 0) pv = 0; 
+    }
+    bool estVivant() const { return pv > 0; }
+};
 
 // Factory pour créer les cases
 class CaseFactory {

@@ -28,6 +28,10 @@ public:
 
     void sauvegarder(std::ofstream& ofs) const;
     void charger(std::ifstream& ifs);
+
+    void engagerCombat(Monstre* m, Donjon& d);
+    void afficherBarreVie(int pvActuels, int pvMax, const std::string& nom) const;
+    void recevoirDegats(int d) { pv -= d; if(pv < 0) pv = 0; }
 };
 
 #endif
