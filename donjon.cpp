@@ -2,6 +2,7 @@
 #include "case.hpp"
 #include <algorithm> // pour std::random_shuffle
 #include <random> // pour std::random_device rd;
+#include <chrono>
 #include <iostream>
 #include <vector>
 #include <queue>
@@ -110,9 +111,10 @@ void Donjon::genererLabyrinthe(int x, int y) {
     std::vector<std::pair<int, int>> directions = {{0, -2}, {0, 2}, {2, 0}, {-2, 0}};
     
     // On crée un générateur de nombres aléatoires basé sur le temps
-    std::random_device rd;
-    std::mt19937 g(rd());
-
+    // On utilise l'horloge système au lieu de random_device
+    static unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    static std::mt19937 g(seed);   
+    
     // On utilise shuffle à la place de random_shuffle
     std::shuffle(directions.begin(), directions.end(), g);
 
