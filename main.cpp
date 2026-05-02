@@ -3,7 +3,16 @@
 #include "donjon.hpp"
 #include "aventurier.hpp"
 
+// Ajout pour gérer l'encodage sous Windows
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main() {
+    // Forcer l'affichage en UTF-8 dans la console Windows
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
     // Initialisation de la graine aléatoire (crucial pour avoir un laby différent à chaque fois)
     srand(static_cast<unsigned>(time(nullptr)));
 
