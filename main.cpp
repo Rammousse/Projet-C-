@@ -51,8 +51,15 @@ int main() {
         monDonjon.generer(21, 11);
     }
     
+    // On calcule la distance minimale (BFS) et on retire 1 (la case de départ)
+    auto cheminOpti = monDonjon.trouverChemin(1, 1);
+    int distanceOptimale = cheminOpti.empty() ? 0 : cheminOpti.size() - 1;
+
     // Lancement de la boucle de jeu
     joueur.boucleDeJeu(monDonjon);
+
+    // Quand le jeu est fini c l'affichage du rapport
+    joueur.afficherRapportFinal(distanceOptimale);
 
     return 0;
 }

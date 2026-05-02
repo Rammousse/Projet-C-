@@ -5,7 +5,11 @@
 #include <chrono>
 
 Aventurier::Aventurier(int startX, int startY) 
-    : posX(startX), posY(startY), pv(100), inventaire(0), aGagne(false) {}
+    : posX(startX), posY(startY), pv(100), inventaire(0), aGagne(false),
+        pasEffectues(0), combatsGagnes(0), piegesSubis(0), tempsCumule(0) 
+{
+    casesVisitees.insert({startX, startY}); // On a déjà visité la case de départ !
+}
 
 bool Aventurier::estVivant() const {
     return pv > 0;
@@ -38,13 +42,15 @@ void Aventurier::deplacer(int dx, int dy, Donjon& d) {
 
     // 3. Vérifier si le déplacement est possible
     if (caseCible != nullptr) {
-        // Si la case n'est pas un mur (symbole '#' défini dans case.hpp)
         if (caseCible->afficher() != '#') {
             posX = cibleX;
             posY = cibleY;
             
-            // Une fois déplacé, on résout l'effet de la case (Trésor, Monstre, etc.)
-            resoudreCase(caseCible,d);
+            // màj des stats
+            pasEffectues++;
+            casesVisitees.insert({posX, posY}); // Ignore automatiquement si déjà visitée
+            
+            resoudreCase(caseCible, d);
         } else {
             std::cout << "Action impossible : Il y a un mur !" << std::endl;
         }
@@ -67,6 +73,7 @@ void Aventurier::resoudreCase(Case* c, Donjon& d) {
     else if (type == 'P') {
         std::cout << CYAN << "\nPIEGE ! -10 PV." << RESET << std::endl;
         pv -= 10;
+        piegesSubis++;
         interaction = true;
     } 
     else if (type == 'M') {
@@ -105,6 +112,10 @@ void Aventurier::resoudreCase(Case* c, Donjon& d) {
 void Aventurier::boucleDeJeu(Donjon& d) {
     char touche;
     bool afficherChemin = false; // on mémorise si on doit afficher le chemin
+
+    // On lance le chrono au début de la boucle
+    auto startTimer = std::chrono::steady_clock::now();
+
     while (estVivant() && !aGagne) {
 
         // On prépare un chemin vide par défaut
@@ -136,6 +147,11 @@ void Aventurier::boucleDeJeu(Donjon& d) {
         }
 
         if (touche == 'v' || touche == 'V') {
+            // Mettre le temps à jour dans la sauvegarde
+            auto now = std::chrono::steady_clock::now();
+            tempsCumule += std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
+            startTimer = std::chrono::steady_clock::now(); // On relance le chrono
+
             std::ofstream ofs("sauvegarde.txt");
             if (ofs.is_open()) {
                 this->sauvegarder(ofs); // Sauvegarde l'aventurier
@@ -156,19 +172,36 @@ void Aventurier::boucleDeJeu(Donjon& d) {
         else if (touche == 'd') deplacer(1, 0, d);
     }
 
-    if (aGagne) {
-        std::cout << "\033[33m" << "VICTOIRE ! Trésors récoltés : " << inventaire << "\033[0m" << std::endl;
-    } else if (!estVivant()) {
-        std::cout << "GAME OVER..." << std::endl;
-    }
+    // Fin de partie
+    auto endTimer = std::chrono::steady_clock::now();
+    tempsCumule += std::chrono::duration_cast<std::chrono::seconds>(endTimer - startTimer).count();
 }
 
 void Aventurier::sauvegarder(std::ofstream& ofs) const {
     ofs << posX << " " << posY << " " << pv << " " << inventaire << " " << aGagne << "\n";
+    
+    // Sauvegarde des stats et de la taille du set
+    ofs << pasEffectues << " " << combatsGagnes << " " << piegesSubis << " " << tempsCumule << " " << casesVisitees.size() << "\n";
+    
+    // Sauvegarde des coordonnées de chaque case visitée
+    for (auto const& coord : casesVisitees) {
+        ofs << coord.first << " " << coord.second << " ";
+    }
+    ofs << "\n";
 }
 
 void Aventurier::charger(std::ifstream& ifs) {
     ifs >> posX >> posY >> pv >> inventaire >> aGagne;
+    
+    int nbCases;
+    ifs >> pasEffectues >> combatsGagnes >> piegesSubis >> tempsCumule >> nbCases;
+    
+    casesVisitees.clear();
+    for (int i = 0; i < nbCases; ++i) {
+        int cx, cy;
+        ifs >> cx >> cy;
+        casesVisitees.insert({cx, cy});
+    }
 }
 
 // Fonction utilitaire pour dessiner les barres de vie
@@ -240,6 +273,8 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
             
             std::cout << "\nAppuyez sur [Entree] pour fuir...";
             std::cin.get(); // Le tampon est déjà propre, on attend juste Entrée
+
+            combatsGagnes++;
             break; 
         }
         else continue; // Touche invalide, on recommence le tour
@@ -294,4 +329,44 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
             break; 
         }
     }
+}
+
+void Aventurier::afficherRapportFinal(int cheminMinimal) const {
+    system("clear");
+    std::string couleurTitre = aGagne ? "\033[33m" : "\033[31m"; // Jaune ou Rouge
+    std::string etat = aGagne ? "VICTOIRE !" : "DÉCÈS...";
+
+    std::cout << couleurTitre << R"(
+  =========================================
+            RAPPORT D'EXPLORATION         
+  =========================================
+)" << RESET;
+    std::cout << "  Résultat    : " << couleurTitre << etat << RESET << "\n";
+    std::cout << "  Temps passé : " << tempsCumule << " s\n\n";
+    
+    std::cout << BLEU << "  -- EXPLORATION --" << RESET << "\n";
+    std::cout << "  Cases uniques visitées : " << casesVisitees.size() << "\n";
+    std::cout << "  Distance parcourue     : " << pasEffectues << " pas\n";
+    if (cheminMinimal > 0) {
+        std::cout << "  Distance optimale BFS  : " << cheminMinimal << " pas\n";
+        
+        if (aGagne) {
+            // Vraie efficacité : (Distance optimale / Distance parcourue) * 100
+            int ratio = (pasEffectues > 0) ? (cheminMinimal * 100) / pasEffectues : 0;
+            
+            // Sécurité on limite à 100% maximum
+            if (ratio > 100) ratio = 100; 
+            
+            std::cout << "  Efficacité             : " << ratio << "%\n\n";
+        } else {
+            // Si le joueur meurt, le trajet n'est pas terminé, l'efficacité n'a pas de sens
+            std::cout << "  Efficacité             : N/A (Mort avant la sortie)\n\n";
+        }
+    }
+
+    std::cout << ROUGE << "  -- COMBAT & SURVIE --" << RESET << "\n";
+    std::cout << "  Monstres vaincus : " << combatsGagnes << "\n";
+    std::cout << "  Pièges déclenchés: " << piegesSubis << "\n";
+    std::cout << "  Trésors récoltés : " << JAUNE << inventaire << RESET << "\n";
+    std::cout << "  =========================================\n\n";
 }

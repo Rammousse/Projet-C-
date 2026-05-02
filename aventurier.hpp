@@ -2,6 +2,8 @@
 #define AVENTURIER_HPP
 
 #include <fstream>
+#include <set>
+#include <utility>
 #include "donjon.hpp"
 
 class Aventurier {
@@ -10,6 +12,12 @@ private:
     int pv;
     int inventaire; // Nombre de trésors
     bool aGagne; // dit si le joueur a gagne
+
+    int pasEffectues;
+    int combatsGagnes;
+    int piegesSubis;
+    long long tempsCumule; // En secondes
+    std::set<std::pair<int, int>> casesVisitees;
 
 public:
     Aventurier(int startX, int startY);
@@ -32,6 +40,8 @@ public:
     void engagerCombat(Monstre* m, Donjon& d);
     void afficherBarreVie(int pvActuels, int pvMax, const std::string& nom) const;
     void recevoirDegats(int d) { pv -= d; if(pv < 0) pv = 0; }
+    
+    void afficherRapportFinal(int cheminMinimal) const;
 };
 
 #endif
