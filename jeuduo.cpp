@@ -105,10 +105,12 @@ void JeuDuo::boucleDeJeu() {
     
     auto startTimer = std::chrono::steady_clock::now();
     
-    // 1. NOUVELLE CONDITION DE VICTOIRE
+    // NOUVEAU : Drapeaux pour savoir si le temps d'un joueur est gelé
+    bool chronoA_Stoppe = false; 
+    bool chronoB_Stoppe = false; 
+    
     while (joueurA.estVivant() && joueurB.estVivant() && !(joueurA.aGagnePartie() && joueurB.aGagnePartie())) {
         
-        // 2. AUTO-FOCUS : Si un joueur a gagné, on force le contrôle sur l'autre
         if (joueurA.aGagnePartie()) joueurAActif = false;
         if (joueurB.aGagnePartie()) joueurAActif = true;
 
@@ -126,10 +128,9 @@ void JeuDuo::boucleDeJeu() {
 
         if (touche == 'x' || touche == 'X') break;
 
-        // gestion DU SWITCH (C)
         if (touche == 'c' || touche == 'C') {
             if (!joueurA.aGagnePartie() && !joueurB.aGagnePartie()) {
-                joueurAActif = !joueurAActif; // Switch normal
+                joueurAActif = !joueurAActif;
             } else {
                 std::cout << JAUNE << "\nL'autre aventurier vous attend déjà à la sortie !" << RESET << std::endl;
                 std::cout << "Appuyez sur [Entree] pour continuer...";
@@ -138,20 +139,22 @@ void JeuDuo::boucleDeJeu() {
             continue;
         }
         
-        // Le Pathfinding pour le joueur actif
         if (touche == 'p' || touche == 'P') {
             if (joueurAActif) afficherCheminA = !afficherCheminA;
             else afficherCheminB = !afficherCheminB;
             continue;
         }
 
-        // Sauvegarde Duo
+        // Sauvegarde Duo mise à jour
         if (touche == 'v' || touche == 'V') {
             auto now = std::chrono::steady_clock::now();
             long long diff = std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
-            joueurA.ajouterTemps(diff);
-            joueurB.ajouterTemps(diff);
-            startTimer = std::chrono::steady_clock::now();
+            
+            // On n'ajoute le temps qu'à ceux qui n'ont pas encore gagné
+            if (!chronoA_Stoppe) joueurA.ajouterTemps(diff);
+            if (!chronoB_Stoppe) joueurB.ajouterTemps(diff);
+            
+            startTimer = now; // On réinitialise pour le prochain tronçon
 
             std::ofstream ofs("sauvegarde.txt");
             if (ofs.is_open()) {
@@ -163,7 +166,6 @@ void JeuDuo::boucleDeJeu() {
             continue;
         }
 
-        // Mouvements centralisés (ZQSD) sur le joueur Actif
         if (joueurAActif) {
             if (touche == 'z') joueurA.deplacer(0, -1, donjonA);
             else if (touche == 's') joueurA.deplacer(0, 1, donjonA);
@@ -177,14 +179,42 @@ void JeuDuo::boucleDeJeu() {
         }
 
         verifierMecanismes();
+
+        // --- NOUVEAU : GESTION DYNAMIQUE DES CHRONOS ---
+        
+        // Si le joueur A vient tout juste de gagner à ce tour
+        if (joueurA.aGagnePartie() && !chronoA_Stoppe) {
+            auto now = std::chrono::steady_clock::now();
+            long long diff = std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
+            
+            joueurA.ajouterTemps(diff);
+            if (!chronoB_Stoppe) joueurB.ajouterTemps(diff); // On synchronise B
+            
+            startTimer = now; // On redémarre à zéro pour le joueur B restant
+            chronoA_Stoppe = true; // Le temps de A est définitivement gelé
+        }
+        
+        // Si le joueur B vient tout juste de gagner à ce tour
+        if (joueurB.aGagnePartie() && !chronoB_Stoppe) {
+            auto now = std::chrono::steady_clock::now();
+            long long diff = std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
+            
+            if (!chronoA_Stoppe) joueurA.ajouterTemps(diff); // On synchronise A
+            joueurB.ajouterTemps(diff);
+            
+            startTimer = now; // On redémarre à zéro pour le joueur A restant
+            chronoB_Stoppe = true; // Le temps de B est définitivement gelé
+        }
     }
     
+    // Fin de partie globale (mort de l'un ou victoire finale)
     auto endTimer = std::chrono::steady_clock::now();
     long long diff = std::chrono::duration_cast<std::chrono::seconds>(endTimer - startTimer).count();
-    joueurA.ajouterTemps(diff);
-    joueurB.ajouterTemps(diff);
+    
+    // On n'ajoute le dernier tronçon qu'à ceux qui étaient encore en train de jouer
+    if (!chronoA_Stoppe) joueurA.ajouterTemps(diff);
+    if (!chronoB_Stoppe) joueurB.ajouterTemps(diff);
 }
-
 void JeuDuo::sauvegarder(std::ofstream& ofs) const {
     ofs << "2\n"; // Marqueur Mode 2 joueurs
     ofs << joueurAActif << "\n";
