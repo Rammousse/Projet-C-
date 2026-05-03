@@ -33,29 +33,34 @@ void Aventurier::afficherStatut() const {
 }
 
 void Aventurier::deplacer(int dx, int dy, Donjon& d) {
-    // 1. Calculer la position théorique
     int cibleX = posX + dx;
     int cibleY = posY + dy;
-
-    // 2. Récupérer la case à cette position auprès du donjon
     Case* caseCible = d.getCase(cibleX, cibleY);
 
-    // 3. Vérifier si le déplacement est possible
     if (caseCible != nullptr) {
-        if (caseCible->afficher() != '#') {
+        // On bloque si c'est un '#' (Mur) OU un 'D' (Porte fermée)
+        if (caseCible->afficher() != '#' && caseCible->afficher() != 'D') {
             posX = cibleX;
             posY = cibleY;
             
-            // màj des stats
             pasEffectues++;
-            casesVisitees.insert({posX, posY}); // Ignore automatiquement si déjà visitée
+            casesVisitees.insert({posX, posY});
             
             resoudreCase(caseCible, d);
         } else {
-            std::cout << "Action impossible : Il y a un mur !" << std::endl;
+            // --- GESTION DE LA COLLISION ET PAUSE ---
+            if (caseCible->afficher() == 'D') {
+                std::cout << MAGENTA << "\nLa porte est verrouillée ! Votre partenaire doit trouver un levier." << RESET << std::endl;
+            } else {
+                std::cout << ROUGE << "\nAction impossible : Il y a un mur !" << RESET << std::endl;
+            }
+            std::cout << "Appuyez sur [Entree] pour continuer...";
+            std::cin.get(); // Pause
         }
     } else {
-        std::cout << "Action impossible : Bord du donjon !" << std::endl;
+        std::cout << ROUGE << "\nAction impossible : Bord du donjon !" << RESET << std::endl;
+        std::cout << "Appuyez sur [Entree] pour continuer...";
+        std::cin.get(); // Pause
     }
 }
 
@@ -147,21 +152,21 @@ void Aventurier::boucleDeJeu(Donjon& d) {
         }
 
         if (touche == 'v' || touche == 'V') {
-            // Mettre le temps à jour dans la sauvegarde
             auto now = std::chrono::steady_clock::now();
             tempsCumule += std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
-            startTimer = std::chrono::steady_clock::now(); // On relance le chrono
+            startTimer = std::chrono::steady_clock::now();
 
             std::ofstream ofs("sauvegarde.txt");
             if (ofs.is_open()) {
-                this->sauvegarder(ofs); // Sauvegarde l'aventurier
-                d.sauvegarder(ofs);     // Sauvegarde le donjon
+                ofs << "1\n";           // Marqueur "Mode Solo"
+                this->sauvegarder(ofs);
+                d.sauvegarder(ofs);
                 std::cout << VERT << "Partie sauvegardée avec succès !" << RESET << std::endl;
                 ofs.close();
             } else {
                 std::cout << ROUGE << "Erreur lors de la sauvegarde." << RESET << std::endl;
             }
-            std::cin.get(); // Pause pour lire le message
+            std::cin.get(); 
             continue;
         }
 

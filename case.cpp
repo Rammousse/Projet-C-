@@ -7,6 +7,8 @@ Case* CaseFactory::creerCase(TypeCase type) {
         case TypeCase::TRESOR:  return new Tresor();
         case TypeCase::MONSTRE: return new Monstre();
         case TypeCase::PIEGE:   return new Piege();
+        case TypeCase::PORTE:   return new Porte();
+        case TypeCase::LEVIER:  return new Levier();
         case TypeCase::SORTIE:  return new Sortie();
         default: return nullptr;
     }

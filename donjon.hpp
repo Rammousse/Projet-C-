@@ -13,6 +13,7 @@ const std::string VERT  = "\033[32m";
 const std::string JAUNE = "\033[33m";
 const std::string BLEU  = "\033[34m";
 const std::string CYAN  = "\033[36m";
+const std::string MAGENTA = "\033[35m";
 
 using Grille2D = std::vector<std::vector<Case*>>;
 
@@ -34,6 +35,8 @@ public:
 
     void sauvegarder(std::ofstream& ofs) const;
     void charger(std::ifstream& ifs);
+
+    std::string getLigneAffichage(int y, int playerX, int playerY, const std::vector<std::pair<int, int>>& chemin = {});
 
     std::vector<std::pair<int, int>> trouverChemin(int startX, int startY); // BFS
     

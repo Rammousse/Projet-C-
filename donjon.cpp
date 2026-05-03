@@ -250,9 +250,48 @@ void Donjon::charger(std::ifstream& ifs) {
                 case 'M': type = TypeCase::MONSTRE; break;
                 case 'P': type = TypeCase::PIEGE; break;
                 case 'S': type = TypeCase::SORTIE; break;
+                case 'D': type = TypeCase::PORTE; break;
+                case 'L': type = TypeCase::LEVIER; break;
+                case 'l': type = TypeCase::LEVIER; break; // Levier activé
                 default:  type = TypeCase::PASSAGE; break; // Espace ' '
             }
             grille[y][x] = CaseFactory::creerCase(type);
         }
     }
+}
+
+std::string Donjon::getLigneAffichage(int y, int playerX, int playerY, const std::vector<std::pair<int, int>>& chemin) {
+    std::string ligne = "";
+    for (int x = 0; x < largeur; ++x) {
+        if (x == playerX && y == playerY) {
+            ligne += VERT + "@ " + RESET;
+        } else {
+            // Vérification du chemin optimal
+            bool estChemin = false;
+            for (auto const& coord : chemin) {
+                if (coord.first == x && coord.second == y) {
+                    estChemin = true;
+                    break;
+                }
+            }
+            
+            if (estChemin && grille[y][x]->afficher() == ' ') {
+                ligne += BLEU + ". " + RESET;
+            } else {
+                char symbole = grille[y][x]->afficher();
+                switch (symbole) {
+                    case 'T': ligne += JAUNE + "T " + RESET; break;
+                    case 'M': ligne += ROUGE + "M " + RESET; break;
+                    case 'P': ligne += CYAN + "P " + RESET; break;
+                    case 'S': ligne += BLEU + "S " + RESET; break;
+                    case 'D': ligne += MAGENTA + "D " + RESET; break;
+                    case 'L': ligne += MAGENTA + "L " + RESET; break;
+                    case 'l': ligne += VERT + "l " + RESET; break;
+                    case '#': ligne += "# "; break;
+                    default:  ligne += "  "; break;
+                }
+            }
+        }
+    }
+    return ligne;
 }

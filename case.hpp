@@ -4,7 +4,7 @@
 #include <iostream>
 
 // Types de cases disponibles
-enum class TypeCase { MUR, PASSAGE, TRESOR, MONSTRE, PIEGE, SORTIE };
+enum class TypeCase { MUR, PASSAGE, TRESOR, MONSTRE, PIEGE, PORTE, LEVIER, SORTIE };
 
 // Classe de base abstraite
 class Case {
@@ -38,6 +38,24 @@ public:
         if(pv < 0) pv = 0; 
     }
     bool estVivant() const { return pv > 0; }
+};
+
+class Porte : public Case {
+private:
+    bool ouverte = false;
+public:
+    void ouvrir() { ouverte = true; }
+    bool estOuverte() const { return ouverte; }
+    char afficher() override { return ouverte ? ' ' : 'D'; } // D pour Door
+};
+
+class Levier : public Case {
+private:
+    bool active = false;
+public:
+    void activer() { active = true; }
+    bool estActive() const { return active; }
+    char afficher() override { return active ? 'l' : 'L'; } // L majuscule = non tiré
 };
 
 // Factory pour créer les cases

@@ -25,6 +25,9 @@ public:
     // Getters
     int getX() const { return posX; }
     int getY() const { return posY; }
+    int getPv() const { return pv; }
+    int getInventaire() const { return inventaire; }
+    void ajouterTemps(long long t) { tempsCumule += t; }
 
     void deplacer(int dx, int dy, Donjon& d);
     void resoudreCase(Case* c, Donjon& d);
@@ -42,6 +45,8 @@ public:
     void recevoirDegats(int d) { pv -= d; if(pv < 0) pv = 0; }
     
     void afficherRapportFinal(int cheminMinimal) const;
+
+    bool aGagnePartie() const { return aGagne; }
 };
 
 #endif
