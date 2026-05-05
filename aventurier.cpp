@@ -4,21 +4,31 @@
 #include <random>
 #include <chrono>
 
+/**
+ * Setup de base du joueur
+ */
 Aventurier::Aventurier(int startX, int startY) 
     : posX(startX), posY(startY), pv(100), inventaire(0), aGagne(false),
         pasEffectues(0), combatsGagnes(0), piegesSubis(0), tempsCumule(0) 
 {
-    casesVisitees.insert({startX, startY}); // On a déjà visité la case de départ !
+    // on oublie pas de compter la tte 1ere case !
+    casesVisitees.insert({startX, startY}); 
 }
 
+/**
+ * Check si le joueur est tjs en vie
+ */
 bool Aventurier::estVivant() const {
     return pv > 0;
 }
 
+/**
+ * Affiche la barre de vie en ascii et l'inventaire
+ */
 void Aventurier::afficherStatut() const {
     std::cout << "\n--- STATS ---" << std::endl;
     
-    // Si PV faibles, on affiche en rouge, sinon en vert
+    // met en rouge si on est low hp, sinon vert
     std::string couleurPV = (pv > 30) ? "\033[32m" : "\033[31m";
     
     std::cout << "PV : " << couleurPV << pv << RESET << " / 100 [";
@@ -32,13 +42,16 @@ void Aventurier::afficherStatut() const {
     std::cout << "Trésors : " << JAUNE << inventaire << RESET << std::endl;
 }
 
+/**
+ * Gere les deplacements sur la grille et les collisions
+ */
 void Aventurier::deplacer(int dx, int dy, Donjon& d) {
     int cibleX = posX + dx;
     int cibleY = posY + dy;
     Case* caseCible = d.getCase(cibleX, cibleY);
 
     if (caseCible != nullptr) {
-        // On bloque si c'est un '#' (Mur) OU un 'D' (Porte fermée)
+        // on bloque sur les murs et les portes fermees
         if (caseCible->afficher() != '#' && caseCible->afficher() != 'D') {
             posX = cibleX;
             posY = cibleY;
@@ -48,26 +61,28 @@ void Aventurier::deplacer(int dx, int dy, Donjon& d) {
             
             resoudreCase(caseCible, d);
         } else {
-            // --- GESTION DE LA COLLISION ET PAUSE ---
+            // cas ou on se prend un mur ou une porte
             if (caseCible->afficher() == 'D') {
                 std::cout << MAGENTA << "\nLa porte est verrouillée ! Votre partenaire doit trouver un levier." << RESET << std::endl;
             } else {
                 std::cout << ROUGE << "\nAction impossible : Il y a un mur !" << RESET << std::endl;
             }
             std::cout << "Appuyez sur [Entree] pour continuer...";
-            std::cin.get(); // Pause
+            std::cin.get(); 
         }
     } else {
         std::cout << ROUGE << "\nAction impossible : Bord du donjon !" << RESET << std::endl;
         std::cout << "Appuyez sur [Entree] pour continuer...";
-        std::cin.get(); // Pause
+        std::cin.get(); 
     }
 }
 
-
+/**
+ * Applique l'effet de la case ou le joueur vient d'arriver
+ */
 void Aventurier::resoudreCase(Case* c, Donjon& d) {
     char type = c->afficher();
-    bool interaction = false; // Pour savoir si on doit faire une pause
+    bool interaction = false; // flag pr savoir si on fait une pause clavier
 
     if (type == 'T') {
         std::cout << JAUNE << "\nTRESOR ! Vous ramassez une relique dorée." << RESET << std::endl;
@@ -90,11 +105,11 @@ void Aventurier::resoudreCase(Case* c, Donjon& d) {
         if (choix == 'c' || choix == 'C') {
             Monstre* monstre = dynamic_cast<Monstre*>(c);
             if (monstre != nullptr) {
-                engagerCombat(monstre, d); // Lance l'interface visuelle
+                engagerCombat(monstre, d); 
             }
         } else {
             std::cout << BLEU << "Vous fuyez courageusement (-5 PV)." << RESET << std::endl;
-            this->recevoirDegats(5); // On utilise la nouvelle méthode pour éviter les PV négatifs
+            this->recevoirDegats(5); // evite les hp negatifs
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cin.get();
         }
@@ -105,50 +120,49 @@ void Aventurier::resoudreCase(Case* c, Donjon& d) {
         interaction = true;
     }
 
-    // Si on a eu un événement, on attend vraiment l'utilisateur
+    // pause si un truc s'est passé
     if (interaction) {
         std::cout << "\nAppuyez sur [Entree] pour continuer...";
-        // On s'assure que le tampon est vide avant d'attendre
-        // std::cin.ignore est déjà appelé dans boucleDeJeu normalement
         std::cin.get(); 
     }
 }
 
+/**
+ * Grosse boucle principale de la game
+ */
 void Aventurier::boucleDeJeu(Donjon& d) {
     char touche;
-    bool afficherChemin = false; // on mémorise si on doit afficher le chemin
+    bool afficherChemin = false; // mémorise si on affiche l'aide opti
 
-    // On lance le chrono au début de la boucle
+    // start chrono
     auto startTimer = std::chrono::steady_clock::now();
 
     while (estVivant() && !aGagne) {
 
-        // On prépare un chemin vide par défaut
         std::vector<std::pair<int, int>> cheminOpti;
         
-        // Si le joueur a demandé le chemin (touche 'p'), on le calcule
+        // calcul bfs si demandé
         if (afficherChemin) {
             cheminOpti = d.trouverChemin(posX, posY);
         }
         
         // On l'envoie à l'affichage
         d.afficher(posX, posY, cheminOpti);
-        
-        // On affiche les stats en dessous
         afficherStatut();
         
-        // On demande l'action
+        // pour demander l'action
         std::cout << "\nActions : (Z)Haut (S)Bas (Q)Gauche (D)Droite | (P)Chemin | (V)Sauvegarder | Quitter (X)" << std::endl;
         std::cout << "Votre choix >> ";
         std::cin >> touche;
 
+        // nettoie le buffer
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         if (touche == 'x' || touche == 'X') break;
 
         if (touche == 'p' || touche == 'P') {
-            afficherChemin = !afficherChemin; // Inverse l'état (true devient false, false devient true)
-            continue; // On recharge l'affichage immédiatement
+            afficherChemin = !afficherChemin; // toggle l'affichage
+            continue; 
         }
 
         if (touche == 'v' || touche == 'V') {
@@ -158,7 +172,7 @@ void Aventurier::boucleDeJeu(Donjon& d) {
 
             std::ofstream ofs("sauvegarde.txt");
             if (ofs.is_open()) {
-                ofs << "1\n";           // Marqueur "Mode Solo"
+                ofs << "1\n";           // flag mode solo pr la save
                 this->sauvegarder(ofs);
                 d.sauvegarder(ofs);
                 std::cout << VERT << "Partie sauvegardée avec succès !" << RESET << std::endl;
@@ -170,31 +184,36 @@ void Aventurier::boucleDeJeu(Donjon& d) {
             continue;
         }
 
-        // Gestion des directions
+        // inputs deplacements
         if (touche == 'z') deplacer(0, -1, d);
         else if (touche == 's') deplacer(0, 1, d);
         else if (touche == 'q') deplacer(-1, 0, d);
         else if (touche == 'd') deplacer(1, 0, d);
     }
 
-    // Fin de partie
+    // fin de run on save le temps
     auto endTimer = std::chrono::steady_clock::now();
     tempsCumule += std::chrono::duration_cast<std::chrono::seconds>(endTimer - startTimer).count();
 }
 
+/**
+ * Conserve les stats et pos ds le fichier txt
+ */
 void Aventurier::sauvegarder(std::ofstream& ofs) const {
     ofs << posX << " " << posY << " " << pv << " " << inventaire << " " << aGagne << "\n";
     
-    // Sauvegarde des stats et de la taille du set
+    // save des stats
     ofs << pasEffectues << " " << combatsGagnes << " " << piegesSubis << " " << tempsCumule << " " << casesVisitees.size() << "\n";
     
-    // Sauvegarde des coordonnées de chaque case visitée
     for (auto const& coord : casesVisitees) {
         ofs << coord.first << " " << coord.second << " ";
     }
     ofs << "\n";
 }
 
+/**
+ * Recharge la game depuis le fichier txt
+ */
 void Aventurier::charger(std::ifstream& ifs) {
     ifs >> posX >> posY >> pv >> inventaire >> aGagne;
     
@@ -209,7 +228,9 @@ void Aventurier::charger(std::ifstream& ifs) {
     }
 }
 
-// Fonction utilitaire pour dessiner les barres de vie
+/**
+ * Petit utilitaire pr dessiner la barre de pv ds l'ecran de combat
+ */
 void Aventurier::afficherBarreVie(int pvActuels, int pvMax, const std::string& nom) const {
     std::string couleur = (pvActuels > pvMax / 3) ? VERT : ROUGE;
     std::cout << nom << " : " << couleur << pvActuels << RESET << "/" << pvMax << " [";
@@ -221,9 +242,11 @@ void Aventurier::afficherBarreVie(int pvActuels, int pvMax, const std::string& n
     std::cout << "]" << std::endl;
 }
 
-// Boucle principale du combat
+/**
+ * Gere l'interface et les jets de des du combat contre un mob
+ */
 void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
-    // Initialisation du générateur aléatoire
+    // setup du rng
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::mt19937 gen(seed);
     std::uniform_int_distribution<> dis(1, 100);
@@ -233,7 +256,7 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
     while (this->estVivant() && m->estVivant() && !fuite) {
         system("clear");
         
-        // 1. Affichage de l'ASCII art du Monstre
+        // beau pti dessin
         std::cout << ROUGE << R"(
                /(.-""-.)\
            |\  \/      \/  /|
@@ -248,11 +271,9 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
         
         std::cout << "======= COMBAT EN COURS =======" << std::endl;
         
-        // 2. Affichage des barres de vie
         afficherBarreVie(this->pv, 100, "VOUS   ");
         afficherBarreVie(m->getPv(), 50, "MONSTRE");
         
-        // 3. Choix de l'attaque
         std::cout << "\nChoisissez votre attaque :" << std::endl;
         std::cout << "1. Légère (Dégâts: 15 | Précision: 90%)" << std::endl;
         std::cout << "2. Moyenne (Dégâts: 25 | Précision: 60%)" << std::endl;
@@ -260,11 +281,9 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
         std::cout << "4. Fuir (-10 PV)" << std::endl;
         std::cout << ">> ";
         
-        // ... (début de la fonction inchangé) ...
-        
         char choix;
         std::cin >> choix;
-        // 1. ON VIDE LE TAMPON TOUT DE SUITE APRÈS LA SAISIE
+        // flush du buffer
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         int proba = 0, degats = 0;
@@ -277,12 +296,12 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
             fuite = true;
             
             std::cout << "\nAppuyez sur [Entree] pour fuir...";
-            std::cin.get(); // Le tampon est déjà propre, on attend juste Entrée
+            std::cin.get(); 
             break; 
         }
-        else continue; // Touche invalide, on recommence le tour
+        else continue; // missclick on recommence le tour
 
-        // 4. Barre de probabilité visuelle et Confirmation
+        // recap de l'attaque
         std::cout << "\nChance de toucher : [";
         for(int i=10; i<=100; i+=10) {
             if(i <= proba) std::cout << VERT << "=" << RESET;
@@ -293,12 +312,13 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
         std::cout << "Confirmer l'attaque ? (o/n) : ";
         char conf;
         std::cin >> conf;
-        // 2. ON VIDE LE TAMPON ICI AUSSI
+        
+        // re flush
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         
-        if (conf != 'o' && conf != 'O') continue; // Annulation de l'attaque
+        if (conf != 'o' && conf != 'O') continue; // annule
 
-        // 5. Résolution de l'attaque du joueur
+        // resolution du hit
         int jet = dis(gen);
         std::cout << "\n>>> ";
         if (jet <= proba) {
@@ -309,7 +329,7 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
             std::cout << ROUGE << "SWOOSH ! Vous ratez votre cible..." << RESET << std::endl;
         }
 
-        // 6. Riposte du monstre (s'il n'est pas mort)
+        // tour du mob s'il est pas crevé
         if (m->estVivant()) {
             std::cout << "\n>>> " << ROUGE << "Le monstre riposte !" << RESET << std::endl;
             if (dis(gen) <= 70) { 
@@ -323,10 +343,10 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
             std::cout << JAUNE << "\nVICTOIRE ! Le monstre s'effondre en poussière." << RESET << std::endl;
         }
 
-        // 3. LA PAUSE DE FIN DE TOUR EST MAINTENANT SIMPLIFIÉE
         std::cout << "\nAppuyez sur [Entree] pour continuer...";
-        std::cin.get(); // Fonctionnera parfaitement à chaque fois !
+        std::cin.get(); 
 
+        // supprime le mob du plateau si on win
         if (!m->estVivant()) {
             d.setCase(posX, posY, TypeCase::PASSAGE);
             combatsGagnes++;
@@ -335,9 +355,12 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
     }
 }
 
+/**
+ * Affiche l'ecran de stat a la fin de la game (win ou loose)
+ */
 void Aventurier::afficherRapportFinal(int cheminMinimal) const {
     system("clear");
-    std::string couleurTitre = aGagne ? "\033[33m" : "\033[31m"; // Jaune ou Rouge
+    std::string couleurTitre = aGagne ? "\033[33m" : "\033[31m"; 
     std::string etat = aGagne ? "VICTOIRE !" : "DÉCÈS...";
 
     std::cout << couleurTitre << R"(
@@ -351,19 +374,19 @@ void Aventurier::afficherRapportFinal(int cheminMinimal) const {
     std::cout << BLEU << "  -- EXPLORATION --" << RESET << "\n";
     std::cout << "  Cases uniques visitées : " << casesVisitees.size() << "\n";
     std::cout << "  Distance parcourue     : " << pasEffectues << " pas\n";
+    
     if (cheminMinimal > 0) {
         std::cout << "  Distance optimale BFS  : " << cheminMinimal << " pas\n";
         
         if (aGagne) {
-            // Vraie efficacité : (Distance optimale / Distance parcourue) * 100
+            // calcul du vrai % d'opti
             int ratio = (pasEffectues > 0) ? (cheminMinimal * 100) / pasEffectues : 0;
             
-            // Sécurité on limite à 100% maximum
+            // max 100% mm si on est fort
             if (ratio > 100) ratio = 100; 
             
             std::cout << "  Efficacité             : " << ratio << "%\n\n";
         } else {
-            // Si le joueur meurt, le trajet n'est pas terminé, l'efficacité n'a pas de sens
             std::cout << "  Efficacité             : N/A (Mort avant la sortie)\n\n";
         }
     }
