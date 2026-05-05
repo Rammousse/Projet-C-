@@ -3,52 +3,61 @@
 #include <limits>
 #include <chrono>
 
+/**
+ * Setup de base du mode coop
+ */
 JeuDuo::JeuDuo() : joueurA(1, 1), joueurB(1, 1), joueurAActif(true) {}
 
+/**
+ * Genere les deux donjons et place les portes/leviers croises
+ */
 void JeuDuo::genererMondes() {
-    // 1. Génération des labyrinthes bruts et des pièges/monstres
+    // generation des grilles de base
     donjonA.generer(21, 11);
     donjonB.generer(21, 11);
 
-    // 2. Récupération des chemins optimaux via BFS
+    // on recup les chemins opti avec notre bfs
     std::vector<std::pair<int, int>> cheminA = donjonA.trouverChemin(1, 1);
     std::vector<std::pair<int, int>> cheminB = donjonB.trouverChemin(1, 1);
 
-    // Sécurité : on s'assure que les chemins sont assez longs pour y placer des éléments
+    // check de securité: faut que le chemin soit assez long pr caler les mecanismes
     if (cheminA.size() > 5 && cheminB.size() > 5) {
         
-        // --- PLACEMENT POUR A ---
-        // Levier A (actionné par A) : placé à 25% de la progression de A
+        //    MECANISMES DU JOUEUR A
+        // le levier de A (placé au 1/4 du chemin)
         int indexLevierA = cheminA.size() / 4;
         donjonA.setCase(cheminA[indexLevierA].first, cheminA[indexLevierA].second, TypeCase::LEVIER);
         
-        // Porte A (bloque A) : placée à 75% de la progression de A
+        // la porte qui bloque A (aux 3/4 du chemin)
         int indexPorteA = cheminA.size() * 3 / 4;
         donjonA.setCase(cheminA[indexPorteA].first, cheminA[indexPorteA].second, TypeCase::PORTE);
-        posPorteA = cheminA[indexPorteA]; // Mémorisation pour le levier B
-
-        // --- PLACEMENT POUR B ---
-        // Levier B (actionné par B) : placé à 25% de la progression de B
+        posPorteA = cheminA[indexPorteA]; // on memorise pour l'autre
+        
+        //     MECANISMES DU JOUEUR B
+        // le levier de B (placé au 1/4 du chemin)
         int indexLevierB = cheminB.size() / 4;
         donjonB.setCase(cheminB[indexLevierB].first, cheminB[indexLevierB].second, TypeCase::LEVIER);
         
-        // Porte B (bloque B) : placée à 75% de la progression de B
+        // la porte qui bloque B (aux 3/4 du chemin)
         int indexPorteB = cheminB.size() * 3 / 4;
         donjonB.setCase(cheminB[indexPorteB].first, cheminB[indexPorteB].second, TypeCase::PORTE);
-        posPorteB = cheminB[indexPorteB]; // Mémorisation pour le levier A
+        posPorteB = cheminB[indexPorteB]; // on memorise pour l'autre
     }
 }
 
+/**
+ * Affiche les deux labyrinthes cote a cote avec l'UI
+ */
 void JeuDuo::afficherSplitScreen(const std::vector<std::pair<int, int>>& cheminA, const std::vector<std::pair<int, int>>& cheminB) {
     system("clear");
     
-    // Indicateurs visuels pour savoir qui on contrôle
+    // petit curseur pr voir qui on controle la tt de suite
     std::string curseurA = joueurAActif ? "\033[47m\033[30m[ EN CONTRÔLE ]\033[0m" : "               ";
     std::string curseurB = !joueurAActif ? "\033[47m\033[30m[ EN CONTRÔLE ]\033[0m" : "               ";
 
     std::cout << "\n    ==== AVENTURIER A ==== " << curseurA << "      ==== AVENTURIER B ==== " << curseurB << "\n\n";
     
-    // Affichage des grilles
+    // on print les lignes des 2 grilles l'une a coté de l'autre
     for (int y = 0; y < donjonA.getHauteur(); ++y) {
         std::string ligneA = donjonA.getLigneAffichage(y, joueurA.getX(), joueurA.getY(), cheminA);
         std::string ligneB = donjonB.getLigneAffichage(y, joueurB.getX(), joueurB.getY(), cheminB);
@@ -56,9 +65,9 @@ void JeuDuo::afficherSplitScreen(const std::vector<std::pair<int, int>>& cheminA
         std::cout << ligneA << "   ||   " << ligneB << std::endl;
     }
 
-    // --- INTERFACE GRAPHIQUE ---
+    // STATS
     std::cout << "\n  PV : \033[32m" << joueurA.getPv() << "\033[0m/100" 
-              << std::string(32, ' ') // Espacement
+              << std::string(32, ' ') // espacement
               << "PV : \033[32m" << joueurB.getPv() << "\033[0m/100" << std::endl;
               
     std::cout << "  Trésors : \033[33m" << joueurA.getInventaire() << "\033[0m" 
@@ -66,15 +75,18 @@ void JeuDuo::afficherSplitScreen(const std::vector<std::pair<int, int>>& cheminA
               << "Trésors : \033[33m" << joueurB.getInventaire() << "\033[0m" << std::endl;
 }
 
+/**
+ * Check si un joueur marche sur un levier pour debloquer l'autre
+ */
 void JeuDuo::verifierMecanismes() {
-    // 1. On regarde la case sous le Joueur A
+    // Check pour le Joueur A
     Case* caseSousA = donjonA.getCase(joueurA.getX(), joueurA.getY());
     if (caseSousA && caseSousA->afficher() == 'L') {
-        // Le joueur A est sur un Levier non activé !
+        // levier trouvé !
         Levier* levier = dynamic_cast<Levier*>(caseSousA);
         if (levier) levier->activer();
         
-        // On ouvre la porte du Joueur B !!
+        // on ouvre la porte de l'autre
         Case* casePorteB = donjonB.getCase(posPorteB.first, posPorteB.second);
         Porte* porteB = dynamic_cast<Porte*>(casePorteB);
         if (porteB) porteB->ouvrir();
@@ -83,7 +95,7 @@ void JeuDuo::verifierMecanismes() {
         std::cin.get();
     }
 
-    // 2. On regarde la case sous le Joueur B
+    // Check pour le Joueur B
     Case* caseSousB = donjonB.getCase(joueurB.getX(), joueurB.getY());
     if (caseSousB && caseSousB->afficher() == 'L') {
         Levier* levier = dynamic_cast<Levier*>(caseSousB);
@@ -98,6 +110,9 @@ void JeuDuo::verifierMecanismes() {
     }
 }
 
+/**
+ * Grosse boucle du mode 2 joueurs (inputs, switch de perso, chronos independants)
+ */
 void JeuDuo::boucleDeJeu() {
     char touche;
     bool afficherCheminA = false;
@@ -105,12 +120,13 @@ void JeuDuo::boucleDeJeu() {
     
     auto startTimer = std::chrono::steady_clock::now();
     
-    // NOUVEAU : Drapeaux pour savoir si le temps d'un joueur est gelé
+    // flags pour stopper le timer de celui qui a fini en 1er
     bool chronoA_Stoppe = false; 
     bool chronoB_Stoppe = false; 
     
     while (joueurA.estVivant() && joueurB.estVivant() && !(joueurA.aGagnePartie() && joueurB.aGagnePartie())) {
         
+        // lock le focus sur le joueur qui a pas encore win
         if (joueurA.aGagnePartie()) joueurAActif = false;
         if (joueurB.aGagnePartie()) joueurAActif = true;
 
@@ -128,6 +144,7 @@ void JeuDuo::boucleDeJeu() {
 
         if (touche == 'x' || touche == 'X') break;
 
+        // switch de perso
         if (touche == 'c' || touche == 'C') {
             if (!joueurA.aGagnePartie() && !joueurB.aGagnePartie()) {
                 joueurAActif = !joueurAActif;
@@ -145,16 +162,16 @@ void JeuDuo::boucleDeJeu() {
             continue;
         }
 
-        // Sauvegarde Duo mise à jour
+        // save le mode duo
         if (touche == 'v' || touche == 'V') {
             auto now = std::chrono::steady_clock::now();
             long long diff = std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
             
-            // On n'ajoute le temps qu'à ceux qui n'ont pas encore gagné
+            // on rajoute du temps qu'a ceux qui jouent encore
             if (!chronoA_Stoppe) joueurA.ajouterTemps(diff);
             if (!chronoB_Stoppe) joueurB.ajouterTemps(diff);
             
-            startTimer = now; // On réinitialise pour le prochain tronçon
+            startTimer = now; // reset pr la suite
 
             std::ofstream ofs("sauvegarde.txt");
             if (ofs.is_open()) {
@@ -166,6 +183,7 @@ void JeuDuo::boucleDeJeu() {
             continue;
         }
 
+        // inputs deplacements selon qui est actif
         if (joueurAActif) {
             if (touche == 'z') joueurA.deplacer(0, -1, donjonA);
             else if (touche == 's') joueurA.deplacer(0, 1, donjonA);
@@ -180,43 +198,47 @@ void JeuDuo::boucleDeJeu() {
 
         verifierMecanismes();
 
-        // --- NOUVEAU : GESTION DYNAMIQUE DES CHRONOS ---
+        //  GESTION DES CHRONOS
         
-        // Si le joueur A vient tout juste de gagner à ce tour
+        // si A vient juste de win a cette frame
         if (joueurA.aGagnePartie() && !chronoA_Stoppe) {
             auto now = std::chrono::steady_clock::now();
             long long diff = std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
             
             joueurA.ajouterTemps(diff);
-            if (!chronoB_Stoppe) joueurB.ajouterTemps(diff); // On synchronise B
+            if (!chronoB_Stoppe) joueurB.ajouterTemps(diff); // on garde B synchro
             
-            startTimer = now; // On redémarre à zéro pour le joueur B restant
-            chronoA_Stoppe = true; // Le temps de A est définitivement gelé
+            startTimer = now; // on remet a 0 pour B qui continue
+            chronoA_Stoppe = true; // freeze def du temps de A
         }
         
-        // Si le joueur B vient tout juste de gagner à ce tour
+        // si B vient juste de win a cette frame
         if (joueurB.aGagnePartie() && !chronoB_Stoppe) {
             auto now = std::chrono::steady_clock::now();
             long long diff = std::chrono::duration_cast<std::chrono::seconds>(now - startTimer).count();
             
-            if (!chronoA_Stoppe) joueurA.ajouterTemps(diff); // On synchronise A
+            if (!chronoA_Stoppe) joueurA.ajouterTemps(diff); // on garde A synchro
             joueurB.ajouterTemps(diff);
             
-            startTimer = now; // On redémarre à zéro pour le joueur A restant
-            chronoB_Stoppe = true; // Le temps de B est définitivement gelé
+            startTimer = now; // on remet a 0 pour A qui continue
+            chronoB_Stoppe = true; // freeze def du temps de B
         }
     }
     
-    // Fin de partie globale (mort de l'un ou victoire finale)
+    // fin de game globale (mort ou les 2 ont gagné)
     auto endTimer = std::chrono::steady_clock::now();
     long long diff = std::chrono::duration_cast<std::chrono::seconds>(endTimer - startTimer).count();
     
-    // On n'ajoute le dernier tronçon qu'à ceux qui étaient encore en train de jouer
+    // ajout du pti bout de temps final
     if (!chronoA_Stoppe) joueurA.ajouterTemps(diff);
     if (!chronoB_Stoppe) joueurB.ajouterTemps(diff);
 }
+
+/**
+ * Enregistre tout l'etat du mode coop dans le txt
+ */
 void JeuDuo::sauvegarder(std::ofstream& ofs) const {
-    ofs << "2\n"; // Marqueur Mode 2 joueurs
+    ofs << "2\n"; // marqueur mode duo
     ofs << joueurAActif << "\n";
     joueurA.sauvegarder(ofs);
     donjonA.sauvegarder(ofs);
@@ -226,6 +248,9 @@ void JeuDuo::sauvegarder(std::ofstream& ofs) const {
     ofs << posPorteB.first << " " << posPorteB.second << "\n";
 }
 
+/**
+ * Charge la save du mode coop
+ */
 void JeuDuo::charger(std::ifstream& ifs) {
     ifs >> joueurAActif;
     joueurA.charger(ifs);
