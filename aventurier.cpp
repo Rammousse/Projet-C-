@@ -278,8 +278,6 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
             
             std::cout << "\nAppuyez sur [Entree] pour fuir...";
             std::cin.get(); // Le tampon est déjà propre, on attend juste Entrée
-
-            combatsGagnes++;
             break; 
         }
         else continue; // Touche invalide, on recommence le tour
@@ -330,7 +328,8 @@ void Aventurier::engagerCombat(Monstre* m, Donjon& d) {
         std::cin.get(); // Fonctionnera parfaitement à chaque fois !
 
         if (!m->estVivant()) {
-            d.setCase(posX, posY, TypeCase::PASSAGE); 
+            d.setCase(posX, posY, TypeCase::PASSAGE);
+            combatsGagnes++;
             break; 
         }
     }
