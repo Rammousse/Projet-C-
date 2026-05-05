@@ -1,5 +1,10 @@
 #include "case.hpp"
 
+/**
+ * Fabrique des cases utilisant une structure de contrôle switch, centralise l'instanciation des objets dérivés de Case, 
+ * facilitant l'ajout de nouveaux types de terrain sans modifier tout le code
+ * Case* : pointeur d'objet ou nullptr si le type est inconnu
+ */
 Case* CaseFactory::creerCase(TypeCase type) {
     switch (type) {
         case TypeCase::MUR:     return new Mur();
