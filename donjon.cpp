@@ -9,14 +9,16 @@
 #include <map>
 #include <string>
 
+/**
+ * Algorithme de recherche en largeur (BFS) pour trouver le chemin le plus court vers la sortie
+ */
 std::vector<std::pair<int, int>> Donjon::trouverChemin(int startX, int startY) {
     int endX = largeur - 2, endY = hauteur - 2;
 
-    // File pour le BFS : stocke les coordonnées (x, y)
     std::queue<std::pair<int, int>> file;
-    file.push({startX, startY});
+    file.push({startX, startY}); //stocke les coordonnées x et y
 
-    // Pour stocker d'où on vient : parent[{filsX, filsY}] = {parentX, parentY}
+    // Pour stocker d'où on vient (parents)pour la reconstruction du chemin
     std::map<std::pair<int, int>, std::pair<int, int>> parents;
     parents[{startX, startY}] = {-1, -1}; // Le point de départ n'a pas de parent
 
@@ -30,12 +32,12 @@ std::vector<std::pair<int, int>> Donjon::trouverChemin(int startX, int startY) {
         std::pair<int, int> courant = file.front();
         file.pop();
 
-        if (courant.first == endX && courant.second == endY) {
+        if (courant.first == endX && courant.second == endY) { // si on a atteint les coordonnées de la sortie
             sortieTrouvee = true;
             break;
         }
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) { // explore les 4 voisins adjacents
             int nx = courant.first + dx[i];
             int ny = courant.second + dy[i];
 
@@ -50,15 +52,15 @@ std::vector<std::pair<int, int>> Donjon::trouverChemin(int startX, int startY) {
         }
     }
 
-    // Reconstruction du chemin si la sortie a été trouvée
+    // Reconstruction du chemin si la sortie a été trouvée (si le bfs a reussi)
     std::vector<std::pair<int, int>> chemin;
     if (sortieTrouvee) {
         std::pair<int, int> actuel = {endX, endY};
         while (actuel.first != -1) {
             chemin.push_back(actuel);
-            actuel = parents[actuel];
+            actuel = parents[actuel]; // on remonte vers le depart
         }
-        std::reverse(chemin.begin(), chemin.end());
+        std::reverse(chemin.begin(), chemin.end()); // On remet dans l'ordre
     }
     return chemin;
 }
@@ -67,7 +69,7 @@ std::vector<std::pair<int, int>> Donjon::trouverChemin(int startX, int startY) {
 
 Donjon::Donjon() : largeur(0), hauteur(0) {}
 
-Donjon::~Donjon() {
+Donjon::~Donjon() { //libère la mémoire de chaque objet Case dynamiquement alloué (destructeur)
     for (auto& ligne : grille) {
         for (Case* c : ligne) {
             delete c;
@@ -75,39 +77,49 @@ Donjon::~Donjon() {
     }
 }
 
-// Initialisation : remplit tout de MURS
+
+/**
+ * Prépare la structure du donjon et lance la génération
+ */
+
+// Initialisation : remplit tout de murs
 void Donjon::generer(int l, int h) {
     largeur = l;
     hauteur = h;
-    grille.assign(hauteur, std::vector<Case*>(largeur, nullptr));
+    grille.assign(hauteur, std::vector<Case*>(largeur, nullptr));  // initialise la grille avec des pointeurs nuls
 
+    // On remplit tout de murs (blocs pleins)
     for (int y = 0; y < hauteur; ++y) {
         for (int x = 0; x < largeur; ++x) {
             grille[y][x] = CaseFactory::creerCase(TypeCase::MUR);
         }
     }
 
-    // Lancement de la génération récursive à partir de (1, 1)
+    // Lancement de la génération récursive à partir de (1, 1), creuse le labyrinthe
     genererLabyrinthe(1, 1);
 
-    placerElements();
+    placerElements(); // ajoute les objets (monstres, trésors...)
     
-    // Placement de l'entrée et de la sortie
+    // Placement de l'entrée 
     delete grille[1][1]; grille[1][1] = CaseFactory::creerCase(TypeCase::PASSAGE);
 
-    //sortie
+    //sortie (en bas a droite)
     int outX = largeur - 2;
     int outY = hauteur - 2;
     delete grille[outY][outX];
     grille[outY][outX] = CaseFactory::creerCase(TypeCase::SORTIE);
 }
 
+/**
+ * Algorithme de génération procédurale (Recursive Backtracker)
+ */
+
 void Donjon::genererLabyrinthe(int x, int y) {
     // Remplacer le mur actuel par un passage
     delete grille[y][x];
     grille[y][x] = CaseFactory::creerCase(TypeCase::PASSAGE);
 
-    // Directions : NORD, SUD, EST, OUEST
+    // directions avec un saut de 2 cases (pour laisser un mur entre les couloirs)
     std::vector<std::pair<int, int>> directions = {{0, -2}, {0, 2}, {2, 0}, {-2, 0}};
     
     // On crée un générateur de nombres aléatoires basé sur le temps
@@ -122,7 +134,7 @@ void Donjon::genererLabyrinthe(int x, int y) {
         int nx = x + d.first;
         int ny = y + d.second;
 
-        // Vérifier si le voisin (à 2 cases) est dans les bornes et est encore un MUR
+        // Vérifier si le voisin (à 2 cases) est dans les bornes et est encore un mur
         if (nx > 0 && nx < largeur - 1 && ny > 0 && ny < hauteur - 1) {
             if (grille[ny][nx]->afficher() == '#') {
                 // Casser le mur entre (x,y) et (nx,ny) 
@@ -131,26 +143,30 @@ void Donjon::genererLabyrinthe(int x, int y) {
                 delete grille[murY][murX];
                 grille[murY][murX] = CaseFactory::creerCase(TypeCase::PASSAGE);
 
-                // Appel récursif 
+                // Appel récursif, continue l'exploration depuis la nouvelle case
                 genererLabyrinthe(nx, ny);
             }
         }
     }
 }
 
+/**
+ * Affiche le donjon dans la console avec des couleurs
+ */
+
 void Donjon::afficher(int playerX, int playerY, const std::vector<std::pair<int, int>>& chemin) {
-    system("clear"); 
+    system("clear"); // Efface la console pour l'animation
 
     for (int y = 0; y < hauteur; ++y) {
         for (int x = 0; x < largeur; ++x) {
             
-            // 1. Priorité au joueur
+            // priorité au joueur
             if (x == playerX && y == playerY) {
                 std::cout << VERT << "@ " << RESET;
                 continue;
             }
 
-            // 2. Vérifier si cette case est dans le chemin optimal
+            // Verifie si cette case est dans le chemin optimal (BFS)
             bool estChemin = false;
             for (auto const& coord : chemin) {
                 if (coord.first == x && coord.second == y) {
@@ -159,7 +175,7 @@ void Donjon::afficher(int playerX, int playerY, const std::vector<std::pair<int,
                 }
             }
 
-            // 3. Affichage
+            // Affichage selon le type de case
             if (estChemin && grille[y][x]->afficher() == ' ') {
                 // On affiche un point bleu pour le chemin
                 std::cout << BLEU << ". " << RESET;
@@ -179,11 +195,15 @@ void Donjon::afficher(int playerX, int playerY, const std::vector<std::pair<int,
     }
 }
 
+/**
+ * Distribue aléatoirement des éléments interactifs dans le labyrinthe
+ */
+
 void Donjon::placerElements() {
     for (int y = 1; y < hauteur - 1; ++y) {
         for (int x = 1; x < largeur - 1; ++x) {
-            // On ne place des éléments QUE sur les cases PASSAGE (les cases vides)
-            // Et on évite la case de départ (1,1) pour ne pas tuer le joueur direct !
+            // On ne place des éléments QUE sur les cases passage (les cases vides)
+            // Et on évite la case de départ (1,1) pour ne pas tuer le joueur direct
             if (grille[y][x]->afficher() == ' ' && !(x == 1 && y == 1)) {
                 
                 int proba = rand() % 100; // Nombre entre 0 et 99
@@ -205,6 +225,7 @@ void Donjon::placerElements() {
     }
 }
 
+//modifie manuellement une case spécifique
 void Donjon::setCase(int x, int y, TypeCase type) {
     if (x >= 0 && x < largeur && y >= 0 && y < hauteur) {
         delete grille[y][x];
@@ -212,11 +233,13 @@ void Donjon::setCase(int x, int y, TypeCase type) {
     }
 }
 
+//Récupère le pointeur de la case à une position donnée
 Case* Donjon::getCase(int x, int y) {
     if (x < 0 || x >= largeur || y < 0 || y >= hauteur) return nullptr;
     return grille[y][x];
 }
 
+//ecrit l'état actuel de la grille dans un fichier
 void Donjon::sauvegarder(std::ofstream& ofs) const {
     ofs << largeur << " " << hauteur << "\n";
     for (int y = 0; y < hauteur; ++y) {
@@ -227,11 +250,11 @@ void Donjon::sauvegarder(std::ofstream& ofs) const {
     }
 }
 
-void Donjon::charger(std::ifstream& ifs) {
+void Donjon::charger(std::ifstream& ifs) { // lit un fichier de sauvegarde et recrée les objets Case correspondants
     ifs >> largeur >> hauteur;
     ifs.ignore(); // Ignorer le saut de ligne après les dimensions
 
-    // Nettoyer l'ancienne grille si elle existait[cite: 5]
+    // Nettoyage de l'ancienne mémoire avant le chargement
     for (auto& ligne : grille) {
         for (Case* c : ligne) delete c;
     }
@@ -243,7 +266,7 @@ void Donjon::charger(std::ifstream& ifs) {
         for (int x = 0; x < largeur; ++x) {
             char symbole = ligne[x];
             TypeCase type;
-            // Mapping inverse du symbole vers TypeCase[cite: 4]
+            // Détermine le type d'objet à créer selon le caractère lu
             switch(symbole) {
                 case '#': type = TypeCase::MUR; break;
                 case 'T': type = TypeCase::TRESOR; break;
@@ -260,6 +283,7 @@ void Donjon::charger(std::ifstream& ifs) {
     }
 }
 
+//version texte formatée d'une ligne pour l'affichage (utilisée pour l'UI)
 std::string Donjon::getLigneAffichage(int y, int playerX, int playerY, const std::vector<std::pair<int, int>>& chemin) {
     std::string ligne = "";
     for (int x = 0; x < largeur; ++x) {
