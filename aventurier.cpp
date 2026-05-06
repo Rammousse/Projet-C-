@@ -110,7 +110,6 @@ void Aventurier::resoudreCase(Case* c, Donjon& d) {
         } else {
             std::cout << BLEU << "Vous fuyez courageusement (-5 PV)." << RESET << std::endl;
             this->recevoirDegats(5); // evite les hp negatifs
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cin.get();
         }
     }
