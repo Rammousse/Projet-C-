@@ -92,6 +92,7 @@ class CaseFactory {
 public:
     /**
      * Crée dynamiquement une instance de Case selon le type demandé, avec Case* Un pointeur vers l'objet créé 
+     */
     static Case* creerCase(TypeCase type);
 };
 
