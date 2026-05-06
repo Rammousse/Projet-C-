@@ -1,3 +1,8 @@
+/**
+ * main : point d'entrée du jeu "Le Donjon", gère l'initialisation du jeu, le menu principal, la sélection du mode 
+ * (Solo ou Duo) ainsi que les mécanismes de sauvegarde et de chargement
+ */
+
 #include <iostream>
 #include <fstream>
 #include <ctime>
@@ -5,7 +10,7 @@
 #include "aventurier.hpp"
 #include "jeuduo.hpp" 
 
-#ifdef _WIN32
+#ifdef _WIN32 // gestion de l'encodage pour Windows pour éviter les problèmes d'accents
 #include <windows.h>
 #endif
 
@@ -13,7 +18,7 @@ int main() {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
-    srand(static_cast<unsigned>(time(nullptr)));
+    srand(static_cast<unsigned>(time(nullptr))); // initialisation du générateur de nombres aléatoires
 
     std::cout << "============================" << std::endl;
     std::cout << "   BIENVENUE DANS LE DONJON " << std::endl;
@@ -28,7 +33,7 @@ int main() {
     int choixPrincipal;
     std::cin >> choixPrincipal;
     
-    if (choixPrincipal == 1) {
+    if (choixPrincipal == 1) { // logique de création d'une nouvelle partie
         std::cout << "\nMODE DE JEU :" << std::endl;
         std::cout << "  1. 1 joueur" << std::endl;
         std::cout << "  2. 2 joueurs" << std::endl;
@@ -37,17 +42,23 @@ int main() {
         int choixMode;
         std::cin >> choixMode;
         
+        // Mode Solo
         if (choixMode == 1) {
             Donjon monDonjon;
-            Aventurier joueur(1, 1);
+            Aventurier joueur(1, 1); //position de depart
             std::cout << "Génération du labyrinthe en cours..." << std::endl;
-            monDonjon.generer(21, 11);
-            joueur.boucleDeJeu(monDonjon);
+            monDonjon.generer(21, 11); // taille du donjon
+
             
+            joueur.boucleDeJeu(monDonjon); //lance la boucle d'interaction du joueur
+            
+            // calcul du chemin le plus court
             int dist = monDonjon.trouverChemin(1,1).size() > 0 ? monDonjon.trouverChemin(1,1).size() - 1 : 0;
             joueur.afficherRapportFinal(dist);
             
-        } else if (choixMode == 2) {
+        } 
+        // Mode Duo
+        else if (choixMode == 2) { 
             JeuDuo modeDuo;
             std::cout << "Génération des mondes liés en cours..." << std::endl;
             modeDuo.genererMondes();
@@ -60,11 +71,13 @@ int main() {
             modeDuo.getJoueurB().afficherRapportFinal(modeDuo.getDistanceOptimaleB());
         }
         
-    } else if (choixPrincipal == 2) {
+    } 
+    // Logique de chargement d'une sauvegarde existante
+    else if (choixPrincipal == 2) {
         std::ifstream ifs("sauvegarde.txt");
         if (ifs.is_open()) {
             int mode;
-            ifs >> mode; // On lit le marqueur caché !
+            ifs >> mode; // On lit le marqueur caché, qui indique le mode (1:solo et 2:duo)
             
             if (mode == 1) {
                 Donjon monDonjon;
