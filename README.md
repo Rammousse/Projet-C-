@@ -49,3 +49,32 @@ classDiagram
     JeuDuo *-- Donjon : Possède (x2)
     JeuDuo *-- Aventurier : Possède (x2)
 ```
+
+``` mermaid
+classDiagram
+    class Aventurier {
+        %% Données / État (Ce qu'il possède)
+        -pv : int (Points de Vie actuels)
+        -posX : int
+        -posY : int
+        -orAmasse : int (Nombre de trésors)
+        -chrono : Chronometre (Temps de jeu)
+        -stats : Statistiques (Pas, combats, dégâts subis...)
+
+        %% Actions Principales (Ce qu'il fait)
+        +demanderAction() : Lire entrée clavier
+        +deplacer(dx, dy, Donjon) : Tenter un mouvement
+        +resoudreCase(Case) : Appliquer l'effet de la case
+        +estVivant() : bool
+
+        %% Interactions Spécifiques
+        -ramasserTresor()
+        -subirDegats(points)
+        -subirDegatsP() : Dégâts piège (-10)
+        -affronterMonstre(Monstre) : Lancer boucle de combat
+        -actionnerLevier(Levier)
+
+        %% Fin de partie
+        +terminerPartie() : Générer rapport final
+    }
+```
