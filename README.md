@@ -1,4 +1,4 @@
-"""mermaid
+'''mermaid
 
 classDiagram
     class Case {
@@ -49,5 +49,4 @@ classDiagram
     Aventurier --> Donjon : Interagit
     JeuDuo *-- Donjon : Possède (x2)
     JeuDuo *-- Aventurier : Possède (x2)
-
-"""
+'''
