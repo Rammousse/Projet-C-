@@ -53,28 +53,21 @@ classDiagram
 ``` mermaid
 classDiagram
     class Aventurier {
-        %% Données / État (Ce qu'il possède)
-        -pv : int (Points de Vie actuels)
+        %% Attributs réels de votre code
         -posX : int
         -posY : int
-        -orAmasse : int (Nombre de trésors)
-        -chrono : Chronometre (Temps de jeu)
-        -stats : Statistiques (Pas, combats, dégâts subis...)
+        -pv : int
+        -inventaire : int
+        -aGagne : bool
 
-        %% Actions Principales (Ce qu'il fait)
-        +demanderAction() : Lire entrée clavier
-        +deplacer(dx, dy, Donjon) : Tenter un mouvement
-        +resoudreCase(Case) : Appliquer l'effet de la case
-        +estVivant() : bool
-
-        %% Interactions Spécifiques
-        -ramasserTresor()
-        -subirDegats(points)
-        -subirDegatsP() : Dégâts piège (-10)
-        -affronterMonstre(Monstre) : Lancer boucle de combat
-        -actionnerLevier(Levier)
-
-        %% Fin de partie
-        +terminerPartie() : Générer rapport final
+        %% Méthodes réelles de votre code
+        +Aventurier(startX: int, startY: int)
+        +getX() int
+        +getY() int
+        +deplacer(dx: int, dy: int, d: Donjon&)
+        +resoudreCase(c: Case*, d: Donjon&)
+        +estVivant() bool
+        +afficherStatut()
+        +boucleDeJeu(d: Donjon&)
     }
 ```
